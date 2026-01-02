@@ -1,8 +1,5 @@
 # Design Guideline – Color & Surface
 
-> This document is based on `00__principles.md`.  
-> It defines how visual decisions appear, not why the principles exist.
-
 ---
 
 ## 目的
