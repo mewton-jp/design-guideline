@@ -4,10 +4,11 @@
 
 **blog.mewton.jp** は Astro (SSG) で構築される。
 Sticker（シール/リアクション）および Sticky Note（付箋/コメント）は動的コンテンツであり、外部バックエンドが必要となる。
+また、頻繁な記事更新に耐えうる堅牢なアンカー設計（Robust Anchor System）が必要となる（詳細は [04__anchor_system.md](./04__anchor_system.md) 参照）。
 
 ---
 
-## 1. Sticker (シール)
+## 1. Sticker
 
 ### 機能要件
 
@@ -24,7 +25,11 @@ Sticker（シール/リアクション）および Sticky Note（付箋/コメ�
 ```typescript
 type Sticker = {
   postId: string;
-  blockId: string;
+  anchor: {
+    index: number;
+    kind: string; // 'p' | 'li' | 'code' ...
+    simhash: string;
+  };
   emoji: string; // Emoji character
   userId: string; // 誰が貼ったか
   userProfile: {
@@ -37,7 +42,7 @@ type Sticker = {
 
 ---
 
-## 2. Sticky Note (付箋)
+## 2. Sticky Note
 
 ### 機能要件
 
@@ -54,7 +59,11 @@ type Sticker = {
 type StickyNote = {
   id: string;
   postId: string;
-  anchorId: string;
+  anchor: {
+    index: number;
+    kind: string;
+    simhash: string;
+  };
   content: string;
   userId: string; // 誰が書いたか
   userProfile: {
@@ -106,7 +115,7 @@ SSG (Astro) 上で、これら動的機能をどう実装するか。
 
 - **Framework**: `React` または `Preact` (軽量性重視)。
 - **Hydration Strategy**:
-    - **Stickers**: `client:visible` (スクロールして見えたら読み込み・描画)。
+    - **Stickers**: `client:visible` (スクロールして見えたら読み込み・Anchor Healing 実行・描画)。
     - **Sticky Notes**: `client:idle` (メインコンテンツ読み込み後に初期化)。
 
 ### 2. State Management & Optimistic UI
