@@ -82,15 +82,11 @@ type StickyNote = {
 
 ### Auth Strategy
 
-- **Option A: Auth.js (NextAuth) on Workers**:
-    - サーバーサイドでOAuthハンドリングを行う。
-    - Session TokenをCookieで管理。
-- **Option B: Firebase Auth / Supabase Auth**:
-    - 認証プロバイダとして外部サービスを利用。
-    - 実装コストが低い。
-- **Recommended**: **Supabase Auth** または **Clerk**
-    - ユーザー管理画面が最初からあり、SNS連携も容易なため。
-    - D1 へのデータ保存時に、JWT の検証を行う。
+### Auth Strategy
+
+詳細は [05__identity_system.md](./05__identity_system.md) を参照。
+**Clerk** (または Supabase Auth) を採用し、ユーザー管理を外部化する。
+D1 へのデータ保存時には、JWT の検証を行い、アプリケーション固有の `UserProfile` と紐付ける。
 
 ### API Design
 

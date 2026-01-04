@@ -5,6 +5,7 @@
 - **Framework**: Astro
 - **Rendering Strategy**: SSG (Static Site Generation)
 - **Content Source**: Git-managed Markdown/MDX
+- **Authentication**: Clerk (Managed User Management)
 - **Sandbox Environment**: WebContainer API / StackBlitz SDK
 
 ---
