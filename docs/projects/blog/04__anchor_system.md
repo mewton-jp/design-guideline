@@ -44,42 +44,18 @@ type Anchor = {
 
 ## 2. Architecture: SSG Pre-computation
 
-クライアントサイドでの重いハッシュ計算を避けるため、Astro のビルドプロセスですべてを事前計算する。
+クライアントサイドでの重いハッシュ計算や、日本語形態素解析のブラウザ互換性問題を避けるため、
+**SSG (Static Site Generation) のビルドプロセスですべてを事前計算する**。
 
 ### Build Phase (Server-Side)
 
 1.  **Node Selection (AST)**:
-    - Remark/Rehype プラグインにより、アンカー対象とするブロック要素を厳密に定義して抽出する。
-    - **Target Nodes**:
-        - `paragraph` (p)
-        - `heading` (h1-h6)
-        - `listItem` (li)
-        - `blockquote`
-        - `code` (pre/code)
-    - **Excluded Nodes**:
-        - `thematicBreak` (hr), `html` (raw html), Empty lines.
-
-2.  **SimHash Calculation**:
-    - 各ブロックのテキストコンテンツから SimHash を計算する。
-    - **Normalization Rules** (表記ゆれへの耐性強化):
-        - **Unicode Normalization**: `NFKC` を適用。
-        - **Whitespace**: 連続する空白・改行を単一のスペースに置換。
-        - **Punctuation**: 句読点や記号を「削除」せず「スペースに置換」（単語境界の保存）。
-    - **Code Block Handling**:
-        - コードブロックは微細な変更（変数名変更など）でも意味が変わるため、より厳密な判定を行う。
-        - SimHashのトークン生成時に記号を含める、あるいは別途 ExactHash (xxhash64等) を併用する等の調整を行う（実装時にチューニング）。
-
+    - Remark/Rehype プラグインにより、アンカー対象とするブロック要素を抽出する。
+2.  **SimHash / N-gram Calculation**:
+    - Build環境（Node.js）であれば `Intl.Segmenter` や `kuromoji.js` 等を自由に利用可能。
+    - ここで生成したハッシュを HTML に焼き込む。
 3.  **HTML Injection**:
-    - 計算結果を `data-*` 属性として HTML に埋め込む。
-
-```html
-<!-- 生成されるHTMLのイメージ -->
-<p data-block-index="10" data-simhash="a1b2c3d4e5f6...">
-  ここは重要なパラグラフです。
-</p>
-```
-
-※ `kind` は `data-*` 属性としては埋め込まず、実行時に `tagName` (`P`, `LI`, `H1-6`...) から導出する。
+    - `<p data-simhash="...">` のように属性として埋め込む。
 
 ---
 
@@ -88,26 +64,26 @@ type Anchor = {
 クライアント（ブラウザ）は、DBに保存された「作成時のアンカー情報」と、現在のDOM上の「実際のブロック情報」を比較し、
 **最も尤もらしい場所（Best Match）** にステッカーを配置する。
 
-このプロセスを **Anchor Healing（アンカーの自己修復）** と呼ぶ。
+**Implementation Priority**:
+ブログのコア機能（記事を読むこと）を優先するため、この Anchor Healing (および Sticker システム全体) は **v1.0 リリース後の実装 (Phase 2)** としてもよい。
+ただし、設計としては以下の SimHash アルゴリズムを正とする。
 
-### Scoring Algorithm (Staged Approach)
+### Scoring Algorithm
 
-数式によるコスト計算よりも、段階的（Staged）なフィルタリング戦略を採用する。これによりチューニングとデバッグを容易にする。
+数式によるコスト計算よりも、段階的（Staged）なフィルタリング戦略を採用する。
 
-**Strategy Phases**:
-
-1.  **Phase 1: Exact Match**
+1.  **Step 1: Exact Match**
     - `Index` が完全一致、かつ `SimHash` が完全一致。
     - -> **Adopt** (Cost: 0)
-2.  **Phase 2: Local Move (±N Blocks)**
+2.  **Step 2: Local Move (±N Blocks)**
     - 近傍（例: ±20）かつ同種（`Kind`一致）のブロック内で、`SimHash` が完全一致するものを探索。
     - -> **Adopt** (Moved)
-3.  **Phase 3: Fuzzy Match (Edit)**
+3.  **Step 3: Fuzzy Match (Edit)**
     - 元の `Index` の位置にあるブロック（`Kind`一致）の `SimHash` ハミング距離を計算。
     - 距離が閾値以下（例: 3 bit差分以内）なら採用。
     - ※ **Exceptional Rule**: `kind === 'code'` の場合、微細な変更でも意味が変わるリスクが高いため、このフェーズはスキップ（あるいは ExactHash を必須）とする。
     - -> **Adopt** (Edited)
-4.  **Phase 4: Detached**
+4.  **Step 4: Detached**
     - 上記いずれにも該当しない場合。
     - -> **Mark as Detached**
 
@@ -121,22 +97,7 @@ type Anchor = {
     - 「本文の編集により位置が特定できなくなったメモ」としてひっそりと表示する。
     - これにより、コンテンツの更新に伴う「文脈の消失」自体をコンテンツ化する。
 
-#### 4.2. Security & Anti-Spam
-- **Rate Limit**: 記事単位×IPアドレス単位での投稿頻度制限。
-- **Sanitization**: 文字列は全てサニタイズ（HTMLタグ除去）。
-- **Allowlist (Sticker)**: 絵文字ステッカーは許可されたユニコード文字のみ通す。
-- **Report**: 悪質な書き込みに対する通報機能（将来実装）。
-
----
-
-## 4. Implementation Details (Draft)
-
-### 4.1. Library Selection
-
-- **SimHash**: `simhash-js` 等の既存ライブラリ、あるいは軽量な独自実装（単純なN-gramベースなど）。
-    - 日本語対応のため、分かち書き（Intl.Segmenter）を利用した N-gram 生成を推奨。
-
-### 4.2. Performance Optimization
+#### 4.2. Performance Optimization
 
 - **Search Scope**:
     - 全ブロックを走査すると遅くなるため、`Target Index ± N`（例: ±20行）の範囲のみを探索する。

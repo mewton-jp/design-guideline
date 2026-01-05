@@ -38,8 +38,15 @@
 ### 2.1. Authentication Provider
 フルマネージドな認証基盤を採用し、保守コストを最小化する。
 
-- **Recommended**: **Clerk** (or Supabase Auth)
-    - **Reason**: フロントエンド（React Islands）およびエッジ（Cloudflare Workers）との親和性が高く、UIコンポーネントが充実しているため。
+- **Provisional / Under Verification**: **Clerk** (or Supabase Auth)
+    - **Reasoning**:
+        - React Islands / Cloudflare Workers との統合事例が多い。
+        - UIコンポーネントが充実しており、実装コストを下げられる可能性がある。
+    - **To Be Determined (TBD)**:
+        - **Cloudflare Workers (Backend)** での JWT 検証フローがスムーズか。
+        - **Japanese UI**: 日本語化（ローカリゼーション）の品質とカスタマイズ性。
+        - **Cost**: MAU課金が個人の非営利ブログとして許容範囲に収まるか。
+        - ※ これらが要件を満たさない場合、**Supabase Auth** を代替として採用する。
 
 ### 2.2. User Profile Model (DB)
 Auth Provider のユーザーIDとは別に、アプリケーション固有のプロフィールを持つ。

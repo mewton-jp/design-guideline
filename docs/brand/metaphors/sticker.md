@@ -81,3 +81,33 @@ Webサイトにおける「いいね (Like)」を再定義する。
 - 自身のステータス誇示に使わない（レアなシールを持っている等のゲーム化は慎重に行う）
 - コンテンツを隠さない（Sticky Note よりもさらに小さく、邪魔にならないサイズ感）
 - 剥がすこと（Un-like）を推奨しない（一度貼ったシールは簡単には剥がれない）
+
+---
+
+## Accessibility Considerations
+
+Sticker は完全に **「装飾 (Decoration)」** と捉え、スクリーンリーダー等からは隠蔽する。
+情報の読み上げやナビゲーションのノイズにならないように制御し、集計情報は別途アクセシブルな形式で提供する。
+
+### Recommended Structure
+
+```html
+// 完全に装飾として扱う
+<div 
+  class="sticker-container"
+  aria-hidden="true"  // スクリーンリーダーから隠す
+  role="presentation" // 装飾であることを明示
+>
+  <span class="sticker" style="--x: 45%; --y: 23%;">👍</span>
+  <span class="sticker" style="--x: 52%; --y: 31%;">🎉</span>
+  {/* ... */}
+</div>
+
+<!-- 集計情報は別途提供 -->
+<div class="sticker-summary" aria-live="polite">
+  このブロックに12件のリアクション
+</div>
+```
+
+- `aria-hidden="true"`: 個別のSticker要素はすべて隠す。
+- `aria-live="polite"`: リアクションの追加や集計の変更は、ユーザーの操作を妨げないタイミングで通知する。

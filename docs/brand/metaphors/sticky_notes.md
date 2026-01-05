@@ -87,3 +87,40 @@ Sticky Note は、
 
 Sticky Note は、
 **ノートの持ち主と、それを覗きに来た訪問者の、緩やかな接点**である。
+
+---
+
+## Accessibility Considerations
+
+Sticky Note は、あくまでその行に対する **「補足情報 (Supplemental Content)」** として作用するように調整する。
+スクリーンリーダーの読み上げ順序やフォーカス管理を考慮し、論理的なDOM構造を維持する。
+
+### Recommended Structure
+
+```html
+<article data-block-index="10" data-simhash="...">
+  <p id="para-10">
+    本文のテキストがここに入ります。
+  </p>
+  
+  <!-- Sticky Noteはaria-describedbyで関連付け -->
+  <aside 
+    class="sticky-note"
+    role="complementary"
+    aria-labelledby="note-author-123"
+    aria-describedby="para-10"
+  >
+    <div id="note-author-123" class="note-author">
+      <img src="..." alt="ユーザー名のアイコン" />
+      <span>@username</span>
+    </div>
+    <p class="note-content">
+      ここの説明がわかりやすい!
+    </p>
+  </aside>
+</article>
+```
+
+- `aria-describedby`: 本文とSticky Noteを紐付ける。
+- `role="complementary"`: 本文のフローから独立した補足情報であることを示す。
+- `aria-labelledby`: Noteの作者情報をラベルとして使用する。

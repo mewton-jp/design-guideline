@@ -43,13 +43,24 @@
 ブログ記事内でのサンドボックス実行には、**WebContainer API** (または StackBlitz SDK) を利用する。
 
 ### 実現方法
+（Phased Sandbox Strategy）
+
+1.  **Phase 1: Static Display (Default)**
+    - 初回ロード時は、軽量なシンタックスハイライト済みコードブロックのみを表示する。
+    - これにより SEO と Initial Load Performance を確保する。
+    - **Mobile Support**: モバイルではこの表示のみを行い、実行環境は提供しない（"Not Supported"）。
+
+2.  **Phase 2: Click-to-Open (Lazy Load)**
+    - ユーザーが「Run Code」ボタンを押した時点で初めて WebContainer をブートする。
+    - **License**: StackBlitz WebContainer API は、このブログのような「個人の非商用利用」においては Free Tier で利用可能と想定される。
+    - **UX**: 起動に数秒かかるため、ローディングアニメーション（"Firing up the engine..."）で体感速度をケアする。
+
+### Architecture Flow
 
 1.  **Code Import**:
-    - ビルド時（SSG）に、`sandboxes/xxx` 以下のファイル内容を読み込む。
-    - これを Astro コンポーネント（`<Sandbox />`）への Props として渡す。
+    - ビルド時（SSG）に、`sandboxes/xxx` 以下のファイル内容を文字列としてバンドルする。
 2.  **Client-Side Boot**:
-    - ユーザーが記事を開くと、ブラウザ上で WebContainer が起動する。
-    - 渡されたファイル内容を仮想ファイルシステムに書き込み、`npm install && npm start` 等を実行する。
+    - User Click -> WebContainer Boot -> File Write -> `npm install`, `npm start` -> `<iframe>` Preview.
 
 ### メリット
 
